@@ -2,7 +2,7 @@ import time
 import matplotlib.pyplot as plt
 
 
-# Paso: VALIDAR la solución parcial
+# Validar la solución parcial
 # Comprueba si se puede poner una reina en (fila, col)
 def es_seguro(tablero, fila, col, n, prohibidas):
     # casilla prohibida
@@ -37,7 +37,7 @@ def es_seguro(tablero, fila, col, n, prohibidas):
 
 # Árbol de decisiones: cada fila es una decisión (en qué columna pongo la reina)
 def resolver(tablero, fila, n, soluciones, prohibidas):
-    # Finalizar: si hemos llegado al final, guardamos una COPIA de la solución
+    # Finalizar: si hemos llegado al final, guardamos una copia de la solución
     if fila == n:
         copia = []
         for f in tablero:
@@ -98,9 +98,7 @@ def dibujar_tablero(tablero, titulo, prohibidas=[]):
     plt.show()
 
 
-# ==========================================
 # PROGRAMA PRINCIPAL
-# ==========================================
 n = int(input("Tamaño del tablero N: "))
 
 soluciones = n_reinas(n)
@@ -115,11 +113,10 @@ else:
     print("Son muchas, muestro solo la primera:")
     imprimir_tablero(soluciones[0])
 
-# ==========================================
+
 # BONUS: casillas prohibidas, N = 5, 6, 7, 8, tiempos y dibujo
-# ==========================================
 print("BONUS")
-prohibidas = [(0, 1), (2, 3)]   # (fila, columna) donde no se puede poner reina
+prohibidas = [(0, 1), (2, 3)]   
 print("Casillas prohibidas (X):", prohibidas)
 print()
 print("N | sin prohibidas | con prohibidas | tiempo (s)")
