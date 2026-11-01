@@ -2,54 +2,94 @@ import time
 import matplotlib.pyplot as plt
 
 
-def n_reinas(n, prohibidas=None):
-    """Devuelve todas las soluciones como listas: reinas[fila] = columna.
-    prohibidas: set de casillas (fila, col) donde no se puede poner reina."""
-    prohibidas = prohibidas or set()
-    reinas = [0] * n
-    cols, diag_principal, diag_secundaria = set(), set(), set()
+# Paso: VALIDAR la solución parcial
+# Comprueba si se puede poner una reina en (fila, col)
+def es_seguro(tablero, fila, col, n, prohibidas):
+    # casilla prohibida
+    if (fila, col) in prohibidas:
+        return False
+
+    # misma columna (miramos solo las filas de arriba)
+    for i in range(fila):
+        if tablero[i][col] == 1:
+            return False
+
+    # diagonal hacia arriba a la izquierda
+    i = fila - 1
+    j = col - 1
+    while i >= 0 and j >= 0:
+        if tablero[i][j] == 1:
+            return False
+        i = i - 1
+        j = j - 1
+
+    # diagonal hacia arriba a la derecha
+    i = fila - 1
+    j = col + 1
+    while i >= 0 and j < n:
+        if tablero[i][j] == 1:
+            return False
+        i = i - 1
+        j = j + 1
+
+    return True
+
+
+# Árbol de decisiones: cada fila es una decisión (en qué columna pongo la reina)
+def resolver(tablero, fila, n, soluciones, prohibidas):
+    # Finalizar: si hemos llegado al final, guardamos una COPIA de la solución
+    if fila == n:
+        copia = []
+        for f in tablero:
+            copia.append(f[:])
+        soluciones.append(copia)
+        return
+
+    # Probamos todas las columnas de esta fila
+    for col in range(n):
+        if es_seguro(tablero, fila, col, n, prohibidas):
+            tablero[fila][col] = 1                      # construir solución parcial
+            resolver(tablero, fila + 1, n, soluciones, prohibidas)
+            tablero[fila][col] = 0                      # retroceder (backtrack)
+
+
+def n_reinas(n, prohibidas=[]):
+    tablero = []
+    for i in range(n):
+        tablero.append([0] * n)
     soluciones = []
-
-    def backtrack(fila):
-        if fila == n:
-            soluciones.append(reinas[:])  # copia, no referencia
-            return
-        for col in range(n):
-            if (fila, col) in prohibidas:
-                continue
-            if col in cols or (fila - col) in diag_principal or (fila + col) in diag_secundaria:
-                continue
-            # colocar reina
-            reinas[fila] = col
-            cols.add(col)
-            diag_principal.add(fila - col)
-            diag_secundaria.add(fila + col)
-            backtrack(fila + 1)
-            # retroceder
-            cols.remove(col)
-            diag_principal.remove(fila - col)
-            diag_secundaria.remove(fila + col)
-
-    backtrack(0)
+    resolver(tablero, 0, n, soluciones, prohibidas)
     return soluciones
 
 
-def imprimir_tablero(reinas):
-    n = len(reinas)
-    for fila in range(n):
-        print(" ".join("Q" if reinas[fila] == c else "." for c in range(n)))
+def imprimir_tablero(tablero, prohibidas=[]):
+    for f in range(len(tablero)):
+        linea = ""
+        for c in range(len(tablero)):
+            if tablero[f][c] == 1:
+                linea = linea + "Q "
+            elif (f, c) in prohibidas:
+                linea = linea + "X "
+            else:
+                linea = linea + ". "
+        print(linea)
     print()
 
 
-def dibujar_tablero(reinas, titulo=""):
-    n = len(reinas)
-    fig, ax = plt.subplots(figsize=(4, 4))
+def dibujar_tablero(tablero, titulo, prohibidas=[]):
+    n = len(tablero)
+    fig, ax = plt.subplots()
     for f in range(n):
         for c in range(n):
-            color = "#eeeed2" if (f + c) % 2 == 0 else "#769656"
+            if (f, c) in prohibidas:
+                color = "red"
+            elif (f + c) % 2 == 0:
+                color = "white"
+            else:
+                color = "gray"
             ax.add_patch(plt.Rectangle((c, n - 1 - f), 1, 1, color=color))
-    for f, c in enumerate(reinas):
-        ax.text(c + 0.5, n - 1 - f + 0.5, "♛", ha="center", va="center", fontsize=28)
+            if tablero[f][c] == 1:
+                ax.text(c + 0.5, n - 1 - f + 0.5, "Q", ha="center", va="center", fontsize=20)
     ax.set_xlim(0, n)
     ax.set_ylim(0, n)
     ax.set_aspect("equal")
@@ -58,27 +98,40 @@ def dibujar_tablero(reinas, titulo=""):
     plt.show()
 
 
-if __name__ == "__main__":
-    # --- Parte principal: N = 4 ---
-    n = 4
-    soluciones = n_reinas(n)
-    print(f"Se encontraron {len(soluciones)} soluciones para N = {n}.\n")
-    for idx, sol in enumerate(soluciones, 1):
-        print(f"Solución {idx}:")
-        imprimir_tablero(sol)
+# ==========================================
+# PROGRAMA PRINCIPAL
+# ==========================================
+n = int(input("Tamaño del tablero N: "))
 
-    # --- Bonus 1: casillas prohibidas ---
-    prohibidas = {(0, 1), (2, 3)}
-    con_restr = n_reinas(6, prohibidas)
-    print(f"N = 6 con casillas prohibidas {prohibidas}: {len(con_restr)} soluciones\n")
+soluciones = n_reinas(n)
+print("Se encontraron", len(soluciones), "soluciones para N =", n)
+print()
 
-    # --- Bonus 2: conteo y tiempos para N = 5..8 ---
-    print("N | soluciones | tiempo (s)")
-    for k in range(5, 9):
-        inicio = time.perf_counter()
-        total = len(n_reinas(k))
-        print(f"{k} | {total:^10} | {time.perf_counter() - inicio:.4f}")
+if len(soluciones) <= 10:
+    for i in range(len(soluciones)):
+        print("Solución", i + 1, ":")
+        imprimir_tablero(soluciones[i])
+else:
+    print("Son muchas, muestro solo la primera:")
+    imprimir_tablero(soluciones[0])
 
-    # --- Bonus 3: visualización ---
-    for idx, sol in enumerate(soluciones, 1):
-        dibujar_tablero(sol, f"Solución {idx} (N = {n})")
+# ==========================================
+# BONUS: casillas prohibidas, N = 5, 6, 7, 8, tiempos y dibujo
+# ==========================================
+print("BONUS")
+prohibidas = [(0, 1), (2, 3)]   # (fila, columna) donde no se puede poner reina
+print("Casillas prohibidas (X):", prohibidas)
+print()
+print("N | sin prohibidas | con prohibidas | tiempo (s)")
+
+for k in range(5, 9):
+    inicio = time.time()
+    sin = n_reinas(k)
+    tiempo = time.time() - inicio
+
+    con = n_reinas(k, prohibidas)
+    print(k, "|", len(sin), "|", len(con), "|", round(tiempo, 4))
+
+    if len(con) > 0:
+        imprimir_tablero(con[0], prohibidas)
+        dibujar_tablero(con[0], "N = " + str(k) + " con casillas prohibidas", prohibidas)
